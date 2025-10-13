@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+python_upload_service/__pycache__/
+db_service/__pycache__/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Profile photos
+public/images/profiles/*
+!public/images/profiles/.gitkeep
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python virtual environment
+python_upload_service/venv/
+db_service/venv/
+
+# Temporary files
+*.tmp
+*.temp
