@@ -323,7 +323,7 @@ function showPasswordStrength(password) {
         indicator.appendChild(errors);
     }
     
-    document.getElementById('change-new-password').parentNode.appendChild(indicator);
+    document.getElementById('change-new-password').parentNode.parentNode.appendChild(indicator);
 }
 
 function calculatePasswordStrength(password) {

@@ -683,66 +683,112 @@
 
     <!-- Upload Dataset Modal -->
     <div id="upload-dataset-modal" class="modal">
-        <div class="modal-content animate__animated animate__fadeInDown">
-            <div class="modal-header">
+        <div class="modal-content upload-modal animate__animated animate__fadeInDown">
+            <div class="modal-header upload-header">
                 <div class="modal-title-section">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <h2>Upload Dataset</h2>
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-title">
+                        <h2>Upload Dataset</h2>
+                        <p>Import Excel or CSV files to analyze your data</p>
+                    </div>
                 </div>
-                <span class="close" onclick="closeUploadDatasetModal()">&times;</span>
             </div>
             
-            <div class="modal-body">
-                <div class="upload-instructions">
-                    <p><i class="fas fa-info-circle"></i> Upload Excel (.xls, .xlsx) or CSV files to import financial data into the system.</p>
+            <div class="modal-body upload-body">
+                <div class="upload-requirements">
+                    <h4><i class="fas fa-info-circle"></i> Requirements & Guidelines</h4>
+                    <div class="requirements-grid">
+                        <div class="requirement-item">
+                            <i class="fas fa-file-excel text-success"></i>
+                            <span>Excel (.xls, .xlsx) or CSV files</span>
+                        </div>
+                        <div class="requirement-item">
+                            <i class="fas fa-weight-hanging text-warning"></i>
+                            <span>Maximum file size: 300 MB</span>
+                        </div>
+                        <div class="requirement-item">
+                            <i class="fas fa-database text-info"></i>
+                            <span>Financial data with proper structure</span>
+                        </div>
+                        <div class="requirement-item">
+                            <i class="fas fa-shield-alt text-primary"></i>
+                            <span>Secure processing with audit trail</span>
+                        </div>
+                    </div>
                 </div>
                 
                 <form id="upload-dataset-form" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="dataset-name">
-                            <i class="fas fa-tag"></i>
-                            Dataset Name
-                        </label>
-                        <input type="text" id="dataset-name" name="name" placeholder="Enter a descriptive name for your dataset" required>
-                        <small class="form-help">Choose a clear, descriptive name that identifies this dataset</small>
+                    <div class="upload-section">
+                        <h4><i class="fas fa-tag"></i> Dataset Information</h4>
+                        <div class="form-group">
+                            <label for="dataset-name">Dataset Name *</label>
+                            <input type="text" id="dataset-name" name="name" placeholder="e.g., Q4 2024 Financial Report" required>
+                            <small class="form-help">Enter a descriptive name that clearly identifies this dataset</small>
+                        </div>
                     </div>
                     
-                    <div class="form-group file-upload-group">
-                        <label for="dataset-file">
-                            <i class="fas fa-file-upload"></i>
-                            Select File
-                        </label>
-                        <div class="file-input-wrapper">
-                            <input type="file" id="dataset-file" name="file" accept=".xls,.xlsx,.csv" required>
-                            <div class="file-input-placeholder">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <p><strong>Click to select</strong> or drag and drop your file here</p>
-                                <small>Supported formats: Excel (.xls, .xlsx) and CSV files</small>
-                                <small>Maximum file size: 300 MB</small>
+                    <div class="upload-section">
+                        <h4><i class="fas fa-file-upload"></i> File Selection</h4>
+                        <div class="form-group file-upload-group">
+                            <div class="file-input-wrapper enhanced">
+                                <input type="file" id="dataset-file" name="file" accept=".xls,.xlsx,.csv" required>
+                                <div class="file-input-placeholder">
+                                    <div class="upload-icon-large">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                    </div>
+                                    <div class="upload-text">
+                                        <h5>Drop your file here or click to browse</h5>
+                                        <p>Supported formats: Excel (.xls, .xlsx) and CSV files</p>
+                                        <div class="file-specs">
+                                            <span class="spec-item"><i class="fas fa-check"></i> Up to 300 MB</span>
+                                            <span class="spec-item"><i class="fas fa-check"></i> Automatic processing</span>
+                                            <span class="spec-item"><i class="fas fa-check"></i> Progress tracking</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="file-preview" class="file-preview" style="display: none;">
+                                    <div class="file-info">
+                                        <i class="fas fa-file-excel file-icon"></i>
+                                        <div class="file-details">
+                                            <div class="file-name"></div>
+                                            <div class="file-size"></div>
+                                        </div>
+                                        <button type="button" class="remove-file" onclick="removeSelectedFile()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
                     <div class="form-group" id="sheet-selection" style="display: none;">
-                        <label for="dataset-sheet">
-                            <i class="fas fa-table"></i>
-                            Select Sheet
-                        </label>
-                        <select id="dataset-sheet" name="sheet">
-                            <option value="">Select a sheet...</option>
-                        </select>
-                        <small class="form-help">Choose which Excel sheet to import data from</small>
+                        <div class="upload-section">
+                            <h4><i class="fas fa-table"></i> Sheet Selection</h4>
+                            <select id="dataset-sheet" name="sheet">
+                                <option value="">Select a sheet to import...</option>
+                            </select>
+                            <small class="form-help">Choose which Excel sheet contains your financial data</small>
+                        </div>
                     </div>
                     
-                    <div class="modal-footer">
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-upload"></i>
-                            Upload Dataset
-                        </button>
-                        <button type="button" class="btn-secondary" onclick="closeUploadDatasetModal()">
-                            <i class="fas fa-times"></i>
-                            Cancel
-                        </button>
+                    <div class="modal-footer upload-footer">
+                        <div class="footer-info">
+                            <i class="fas fa-lock"></i>
+                            <span>Your data is processed securely and logged for audit purposes</span>
+                        </div>
+                        <div class="footer-actions">
+                            <button type="button" class="btn-secondary" onclick="closeUploadDatasetModal()">
+                                <i class="fas fa-times"></i>
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn-primary btn-upload">
+                                <i class="fas fa-upload"></i>
+                                Start Upload
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -817,42 +863,65 @@
     <div id="change-password-modal" class="modal">
         <div class="modal-content animate__animated animate__fadeInDown">
             <div class="modal-header">
-                <h2>Change Password</h2>
+                <div class="modal-title-section">
+                    <i class="fas fa-key"></i>
+                    <h2>Change Password</h2>
+                </div>
                 <span class="close" onclick="closeChangePasswordModal()">&times;</span>
             </div>
-            <form id="change-password-form">
-                <div class="form-group">
-                    <label for="change-current-password">Current Password</label>
-                    <div class="input-group">
-                        <input type="password" id="change-current-password" name="currentPassword" required>
-                        <button type="button" class="toggle-password" onclick="togglePassword('change-current-password')">
-                            <i class="fas fa-eye"></i>
-                        </button>
+            <div class="modal-body">
+                <form id="change-password-form">
+                    <div class="form-group form-group-full">
+                        <label for="change-current-password">
+                            <i class="fas fa-lock"></i>
+                            Current Password
+                        </label>
+                        <div class="input-group">
+                            <input type="password" id="change-current-password" name="currentPassword" placeholder="Enter your current password" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('change-current-password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label for="change-new-password">New Password</label>
-                    <div class="input-group">
-                        <input type="password" id="change-new-password" name="password" required>
-                        <button type="button" class="toggle-password" onclick="togglePassword('change-new-password')">
-                            <i class="fas fa-eye"></i>
-                        </button>
+                    
+                    <div class="form-group form-group-full">
+                        <label for="change-new-password">
+                            <i class="fas fa-key"></i>
+                            New Password
+                        </label>
+                        <div class="input-group">
+                            <input type="password" id="change-new-password" name="password" placeholder="Enter your new password" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('change-new-password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <small class="form-help">Password must be at least 8 characters long</small>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label for="change-confirm-password">Confirm New Password</label>
-                    <div class="input-group">
-                        <input type="password" id="change-confirm-password" name="confirmPassword" required>
-                        <button type="button" class="toggle-password" onclick="togglePassword('change-confirm-password')">
-                            <i class="fas fa-eye"></i>
-                        </button>
+                    
+                    <div class="form-group form-group-full">
+                        <label for="change-confirm-password">
+                            <i class="fas fa-check-circle"></i>
+                            Confirm New Password
+                        </label>
+                        <div class="input-group">
+                            <input type="password" id="change-confirm-password" name="confirmPassword" placeholder="Confirm your new password" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('change-confirm-password')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" onclick="closeChangePasswordModal()">Cancel</button>
-                    <button type="submit" class="btn-primary">Change Password</button>
-                </div>
-            </form>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeChangePasswordModal()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button type="submit" form="change-password-form" class="btn-primary">
+                    <i class="fas fa-save"></i>
+                    Change Password
+                </button>
+            </div>
         </div>
     </div>
 

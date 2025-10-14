@@ -1,8 +1,11 @@
 // Dashboard functionality
 let revenueChart = null;
 let cogsChart = null;
+let ebitdaChart = null;
+let nettIncomeChart = null;
 let isLoadingDashboard = false;
 
+// Load dashboard data
 async function loadDashboardData() {
     if (isLoadingDashboard) return;
     
@@ -22,14 +25,10 @@ async function loadDashboardData() {
         if (regionFilter !== 'all') params.append('region', regionFilter);
         if (monthFilter !== 'all') params.append('month', monthFilter);
         
-        const queryString = params.toString();
-        const endpoint = queryString ? `/dashboard/data?${queryString}` : '/dashboard/data';
-        
-        const data = await app.apiRequest(endpoint);
+        const data = await app.apiRequest(`/dashboard/data?${params.toString()}`);
         
         if (data?.success) {
             updateDashboardCards(data.data.cards || {});
-            updatePerformanceCards(data.data.performance || {});
             updateDashboardCharts(data.data.charts || {});
             updateDatasetFilter(data.data.filters?.datasets || []);
             updateEntityFilter(data.data.filters?.entities || []);
@@ -50,43 +49,43 @@ function updateDashboardCards(cards) {
     const revenueElement = document.getElementById('total-revenue');
     if (revenueElement && cards.totalRevenue !== undefined) {
         revenueElement.textContent = app.formatCurrency(cards.totalRevenue);
+        revenueElement.parentElement.classList.remove('empty-state');
     }
     
     const cogsElement = document.getElementById('total-cogs');
     if (cogsElement && cards.totalCogs !== undefined) {
         cogsElement.textContent = app.formatCurrency(cards.totalCogs);
+        cogsElement.parentElement.classList.remove('empty-state');
     }
     
     const ebitdaElement = document.getElementById('total-ebitda');
     if (ebitdaElement && cards.totalEbitda !== undefined) {
         ebitdaElement.textContent = app.formatCurrency(cards.totalEbitda);
+        ebitdaElement.parentElement.classList.remove('empty-state');
     }
     
     const nettIncomeElement = document.getElementById('total-nett-income');
     if (nettIncomeElement && cards.totalNettIncome !== undefined) {
         nettIncomeElement.textContent = app.formatCurrency(cards.totalNettIncome);
+        nettIncomeElement.parentElement.classList.remove('empty-state');
     }
-}
-
-function updatePerformanceCards(performance) {
-    // Performance cards removed - function kept for compatibility
 }
 
 function updateDashboardCharts(charts) {
     if (charts.revenueByEntity) {
-        createSimpleChart('revenue-chart', charts.revenueByEntity, 'pie');
+        createPieChart('revenue-chart', charts.revenueByEntity, 'Revenue per Entity');
     }
     
     if (charts.cogsByEntity) {
-        createSimpleChart('cogs-chart', charts.cogsByEntity, 'pie');
+        createPieChart('cogs-chart', charts.cogsByEntity, 'Gross Profit per Entity');
     }
     
     if (charts.ebitdaByEntity) {
-        createSimpleChart('ebitda-chart', charts.ebitdaByEntity, 'pie');
+        createPieChart('ebitda-chart', charts.ebitdaByEntity, 'EBITDA per Entity');
     }
     
     if (charts.nettIncomeByEntity) {
-        createSimpleChart('nett-income-chart', charts.nettIncomeByEntity, 'pie');
+        createPieChart('nett-income-chart', charts.nettIncomeByEntity, 'Net Income per Entity');
     }
 }
 
@@ -106,12 +105,13 @@ function getEntityColor(entityName, index) {
     return entityColorMap[entityName];
 }
 
-function createSimpleChart(canvasId, data, type = 'pie') {
+function createPieChart(canvasId, data, title) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
     
-    if (window[canvasId + '_chart']) {
-        window[canvasId + '_chart'].destroy();
+    // Destroy existing chart
+    if (window[canvasId + '_instance']) {
+        window[canvasId + '_instance'].destroy();
     }
     
     if (!data || data.length === 0) {
@@ -124,15 +124,13 @@ function createSimpleChart(canvasId, data, type = 'pie') {
         return;
     }
     
-    const total = data.reduce((sum, item) => sum + item.value, 0);
-    
     const chartConfig = {
-        type: type,
+        type: 'pie',
         data: {
-            labels: data.map(item => item.name || item.label),
+            labels: data.map(item => item.name),
             datasets: [{
-                data: data.map(item => item.value),
-                backgroundColor: data.map((item, index) => getEntityColor(item.name || item.label, index)),
+                data: data.map(item => Math.abs(item.value)),
+                backgroundColor: data.map((item, index) => getEntityColor(item.name, index)),
                 borderColor: '#ffffff',
                 borderWidth: 2,
                 hoverBorderWidth: 3
@@ -140,7 +138,7 @@ function createSimpleChart(canvasId, data, type = 'pie') {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             animation: {
                 animateRotate: true,
                 duration: 800
@@ -149,12 +147,29 @@ function createSimpleChart(canvasId, data, type = 'pie') {
                 legend: { 
                     position: 'bottom',
                     labels: {
-                        boxWidth: 14,
-                        padding: 18,
-                        font: { size: 13, weight: 'bold' },
+                        boxWidth: 12,
+                        padding: 15,
+                        font: { size: 11, weight: '600' },
                         color: '#333',
                         usePointStyle: true,
-                        pointStyle: 'circle'
+                        pointStyle: 'circle',
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    return {
+                                        text: label,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].borderColor,
+                                        lineWidth: data.datasets[0].borderWidth,
+                                        pointStyle: 'circle',
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
                     }
                 },
                 tooltip: {
@@ -171,16 +186,16 @@ function createSimpleChart(canvasId, data, type = 'pie') {
             },
             layout: {
                 padding: {
-                    top: 15,
-                    bottom: 35,
-                    left: 15,
-                    right: 15
+                    top: 10,
+                    bottom: 20,
+                    left: 10,
+                    right: 10
                 }
             }
         }
     };
     
-    window[canvasId + '_chart'] = new Chart(ctx, chartConfig);
+    window[canvasId + '_instance'] = new Chart(ctx, chartConfig);
 }
 
 // Filter functions
@@ -300,6 +315,134 @@ function updateCompanyFilter(companies) {
 
 
 
+// Show empty state when no dataset selected
+function showEmptyDashboardState() {
+    // Only show if user is logged in and on dashboard page
+    if (!currentUser || !authToken) {
+        return;
+    }
+    
+    const dashboardPage = document.getElementById('dashboard-page');
+    if (!dashboardPage || dashboardPage.style.display === 'none') {
+        return;
+    }
+    
+    const cards = document.querySelectorAll('.dashboard-cards .card');
+    const charts = document.querySelectorAll('.chart-container canvas');
+    
+    if (!document.getElementById('empty-state-styles')) {
+        const style = document.createElement('style');
+        style.id = 'empty-state-styles';
+        style.textContent = `
+            .empty-state {
+                position: relative;
+                opacity: 0.7;
+            }
+            .empty-state .card-value {
+                color: #999 !important;
+                font-style: italic;
+            }
+            .empty-state::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(45deg, transparent 40%, rgba(102, 126, 234, 0.1) 50%, transparent 60%);
+                animation: pulse 2s ease-in-out infinite;
+                pointer-events: none;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 0; }
+                50% { opacity: 1; }
+            }
+            .select-prompt {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px 30px;
+                border-radius: 15px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                text-align: center;
+                z-index: 1000;
+                animation: bounce 2s ease-in-out infinite;
+                font-size: 16px;
+                font-weight: 500;
+            }
+            @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% { transform: translate(-50%, -50%) translateY(0); }
+                40% { transform: translate(-50%, -50%) translateY(-10px); }
+                60% { transform: translate(-50%, -50%) translateY(-5px); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Add empty state to cards
+    cards.forEach(card => {
+        card.classList.add('empty-state');
+        const valueElement = card.querySelector('.card-value');
+        if (valueElement) {
+            valueElement.textContent = '- -';
+        }
+    });
+    
+    // Clear charts
+    charts.forEach(canvas => {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#999';
+        ctx.textAlign = 'center';
+        ctx.fillText('Pilih dataset terlebih dahulu', canvas.width / 2, canvas.height / 2);
+    });
+}
+
+function showDatasetSelectionPrompt() {
+    // Only show if user is logged in and on dashboard page
+    if (!currentUser || !authToken) {
+        return;
+    }
+    
+    const dashboardPage = document.getElementById('dashboard-page');
+    if (!dashboardPage || dashboardPage.style.display === 'none') {
+        return;
+    }
+    
+    // Check if dataset filter has options (other than "All Datasets")
+    const datasetFilter = document.getElementById('dataset-filter');
+    if (!datasetFilter || datasetFilter.options.length <= 1) {
+        return; // Don't show prompt if no datasets available
+    }
+    
+    // Remove existing prompt
+    const existingPrompt = document.getElementById('dataset-prompt');
+    if (existingPrompt) existingPrompt.remove();
+    
+    const prompt = document.createElement('div');
+    prompt.id = 'dataset-prompt';
+    prompt.className = 'select-prompt';
+    prompt.innerHTML = `
+        <div style="margin-bottom: 10px;">📊</div>
+        <div>Silakan pilih <strong>Dataset</strong> untuk melihat data dashboard</div>
+        <div style="font-size: 14px; margin-top: 8px; opacity: 0.9;">Gunakan filter di atas untuk memulai</div>
+    `;
+    
+    document.body.appendChild(prompt);
+    
+    // Auto-hide after 8 seconds
+    setTimeout(() => {
+        if (prompt && prompt.parentNode) {
+            prompt.style.animation = 'fadeOut 0.5s ease-out';
+            setTimeout(() => prompt.remove(), 500);
+        }
+    }, 8000);
+}
+
 // Add loading states for dashboard cards only
 function showDashboardLoading() {
     const cards = document.querySelectorAll('.dashboard-cards .card');
@@ -326,17 +469,26 @@ function showDashboardLoading() {
                 0% { left: -100%; }
                 100% { left: 100%; }
             }
+            @keyframes fadeOut {
+                from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                to { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            }
         `;
         document.head.appendChild(style);
     }
     
+    // Remove empty state and prompt
     cards.forEach(card => {
+        card.classList.remove('empty-state');
         card.classList.add('card-loading');
         const valueElement = card.querySelector('.card-value');
         if (valueElement) {
             valueElement.textContent = 'Loading...';
         }
     });
+    
+    const prompt = document.getElementById('dataset-prompt');
+    if (prompt) prompt.remove();
 }
 
 function hideDashboardLoading() {
@@ -424,11 +576,17 @@ function stopDashboardAutoRefresh() {
 
 // Responsive chart handling
 function handleChartResize() {
-    if (revenueChart) {
-        revenueChart.resize();
+    if (window['revenue-chart_instance']) {
+        window['revenue-chart_instance'].resize();
     }
-    if (cogsChart) {
-        cogsChart.resize();
+    if (window['cogs-chart_instance']) {
+        window['cogs-chart_instance'].resize();
+    }
+    if (window['ebitda-chart_instance']) {
+        window['ebitda-chart_instance'].resize();
+    }
+    if (window['nett-income-chart_instance']) {
+        window['nett-income-chart_instance'].resize();
     }
 }
 
@@ -449,7 +607,9 @@ function initializeDashboardFilters() {
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeDashboardFilters);
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeDashboardFilters();
+    });
 } else {
     initializeDashboardFilters();
 }
@@ -462,3 +622,7 @@ window.dashboard = {
     startDashboardAutoRefresh,
     stopDashboardAutoRefresh
 };
+
+// Make functions globally available for HTML onclick handlers
+window.applyFilters = applyFilters;
+window.clearFilters = clearFilters;

@@ -144,6 +144,7 @@ function showUploadDatasetModal() {
         // Re-initialize file input handler when modal opens
         setTimeout(() => {
             initializeFileInput();
+            initializeDatasetNameValidation();
             const nameInput = document.getElementById('dataset-name');
             if (nameInput) nameInput.focus();
         }, 100);
@@ -237,6 +238,22 @@ function initializeUploadForm() {
         return;
     }
     
+    // Check for duplicate dataset name
+    try {
+        const existingDatasets = await app.apiRequest('/datasets');
+        if (existingDatasets.success) {
+            const duplicateName = existingDatasets.data.find(dataset => 
+                dataset.name.toLowerCase() === name.toLowerCase()
+            );
+            if (duplicateName) {
+                app.showAlert('Dataset name already exists. Please choose a different name.', 'error');
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking dataset names:', error);
+    }
+    
     // Check if sheet selection is required but not selected
     const sheetSelection = document.getElementById('sheet-selection');
     const sheetSelect = document.getElementById('dataset-sheet');
@@ -254,45 +271,19 @@ function initializeUploadForm() {
     const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
     
     if (!allowedTypes.includes(fileExtension)) {
-        Swal.fire({
-            title: 'Invalid File Format',
-            text: 'Please select a valid Excel (.xls, .xlsx) or CSV file.',
-            icon: 'error',
-            confirmButtonColor: '#dc3545'
-        });
+        app.showAlert('Please select a valid Excel (.xls, .xlsx) or CSV file.', 'error');
         return;
     }
     
     if (fileSize > maxSize) {
-        Swal.fire({
-            title: 'File Too Large',
-            text: 'File size must be less than 300MB.',
-            icon: 'error',
-            confirmButtonColor: '#dc3545'
-        });
+        app.showAlert('File size must be less than 300MB.', 'error');
         return;
     }
     
     // Validate file structure
     const structureValidation = await validateFileStructure(file);
     if (!structureValidation.isValid) {
-        Swal.fire({
-            title: 'Invalid File Structure',
-            html: `
-                <p>The file structure doesn't match the required format:</p>
-                <div style="text-align: left; margin: 15px 0;">
-                    <strong>Required columns:</strong><br>
-                    ${structureValidation.requiredColumns.join(', ')}
-                </div>
-                <div style="text-align: left; color: #dc3545;">
-                    <strong>Issues found:</strong><br>
-                    ${structureValidation.errors.join('<br>')}
-                </div>
-            `,
-            icon: 'error',
-            confirmButtonColor: '#dc3545',
-            width: 500
-        });
+        app.showAlert(`File structure validation failed: ${structureValidation.errors.join(', ')}`, 'error');
         return;
     }
     
@@ -490,105 +481,97 @@ async function uploadDatasetWithProgress(formData, name, fileName) {
     window.uploadStartTime = Date.now();
     window.uploadRecordCount = 0;
     
-    // Create minimizable progress bar
-    createMinimizableProgressBar(name, fileName);
-    
-    // Show initial progress modal with enhanced tracking
-    const progressModal = Swal.fire({
-        title: '',
-        html: `
+    // Create custom progress modal
+    const progressModal = document.createElement('div');
+    progressModal.id = 'custom-progress-modal';
+    progressModal.className = 'custom-modal-overlay';
+    progressModal.innerHTML = `
+        <div class="custom-modal-content upload-progress-modal">
             <div class="upload-progress-container">
-                <div class="upload-icon">
-                    <i class="fas fa-cloud-upload-alt"></i>
+                <div class="progress-header">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="dataset-info">
+                        <h3>${name}</h3>
+                        <p>${fileName}</p>
+                    </div>
                 </div>
                 
-                <div class="dataset-info">
-                    <h4>${name}</h4>
-                    <p>${fileName}</p>
-                </div>
-                
-                <div class="current-step">
+                <div class="progress-steps">
                     <div class="step-indicator">
-                        <span class="step-number">1</span>
-                        <span class="step-text" id="current-step-text">Initializing upload...</span>
+                        <div class="step-circle">
+                            <span class="step-number">1</span>
+                        </div>
+                        <div class="step-content">
+                            <span class="step-text" id="current-step-text">Initializing upload...</span>
+                        </div>
                     </div>
-                    <div class="step-progress">
-                        <div class="step" data-step="1">Upload</div>
-                        <div class="step" data-step="2">Process</div>
-                        <div class="step" data-step="3">Validate</div>
-                        <div class="step" data-step="4">Complete</div>
+                    
+                    <div class="steps-timeline">
+                        <div class="timeline-step active" data-step="1">
+                            <div class="timeline-dot"></div>
+                            <span>Upload</span>
+                        </div>
+                        <div class="timeline-step" data-step="2">
+                            <div class="timeline-dot"></div>
+                            <span>Process</span>
+                        </div>
+                        <div class="timeline-step" data-step="3">
+                            <div class="timeline-dot"></div>
+                            <span>Validate</span>
+                        </div>
+                        <div class="timeline-step" data-step="4">
+                            <div class="timeline-dot"></div>
+                            <span>Complete</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="progress-wrapper">
+                <div class="progress-section">
                     <div class="progress-bar">
                         <div class="progress-fill" id="upload-progress-fill"></div>
                     </div>
-                    <div class="progress-text">
-                        <span id="progress-percentage">0%</span>
-                        <span id="progress-status">Preparing upload...</span>
+                    <div class="progress-info">
+                        <span class="progress-percentage" id="progress-percentage">0%</span>
+                        <span class="progress-status" id="progress-status">Preparing upload...</span>
                     </div>
                 </div>
                 
-                <div class="upload-stats">
-                    <div class="stat-item">
-                        <span class="stat-label">Upload Speed:</span>
-                        <span id="upload-speed">-</span>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-tachometer-alt"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-label">Speed</span>
+                            <span class="stat-value" id="upload-speed">-</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Time Remaining:</span>
-                        <span id="time-remaining">Calculating...</span>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-label">Remaining</span>
+                            <span class="stat-value" id="time-remaining">Calculating...</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Records Processed:</span>
-                        <span id="records-processed">0</span>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-database"></i></div>
+                        <div class="stat-content">
+                            <span class="stat-label">Records</span>
+                            <span class="stat-value" id="records-processed">0</span>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="progress-actions" id="progress-actions">
-                    <button class="btn-secondary" onclick="minimizeProgress()" style="margin-top: 15px; margin-right: 10px;">
-                        <i class="fas fa-window-minimize"></i> Minimize
-                    </button>
-                    <button class="btn-danger" onclick="cancelUpload()" style="margin-top: 15px;">
-                        <i class="fas fa-times"></i> Cancel
+                    <button class="btn-action btn-cancel" onclick="cancelUpload()">
+                        <i class="fas fa-times"></i>
+                        <span>Cancel Upload</span>
                     </button>
                 </div>
             </div>
-            
-            <style>
-                .upload-progress-container { text-align: center; padding: 20px; }
-                .upload-icon { font-size: 64px; color: #667eea; margin-bottom: 20px; animation: pulse 2s infinite; }
-                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-                .dataset-info h4 { margin: 0 0 5px 0; color: #333; }
-                .dataset-info p { margin: 0 0 20px 0; color: #666; font-size: 14px; }
-                .current-step { margin-bottom: 20px; }
-                .step-indicator { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px; }
-                .step-number { background: #667eea; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
-                .step-text { color: #333; font-weight: 500; }
-                .step-progress { display: flex; justify-content: space-between; gap: 5px; }
-                .step { flex: 1; padding: 8px 4px; background: #f8f9fa; border-radius: 4px; font-size: 11px; color: #666; transition: all 0.3s ease; }
-                .step.active { background: #667eea; color: white; }
-                .step.completed { background: #28a745; color: white; }
-                .progress-wrapper { margin: 20px 0; }
-                .progress-bar { background: #e9ecef; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 15px; }
-                .progress-fill { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 6px; }
-                .progress-text { display: flex; justify-content: space-between; align-items: center; }
-                #progress-percentage { font-weight: bold; color: #667eea; font-size: 18px; }
-                #progress-status { color: #666; font-size: 14px; }
-                .upload-stats { display: flex; justify-content: space-around; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef; }
-                .stat-item { text-align: center; }
-                .stat-label { display: block; font-size: 12px; color: #666; margin-bottom: 5px; }
-                .stat-item span:last-child { font-weight: bold; color: #333; }
-            </style>
-        `,
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        width: 650,
-        customClass: {
-            popup: 'upload-progress-modal'
-        }
-    });
+        </div>
+    `;
+    document.body.appendChild(progressModal);
     
     try {
         const startTime = Date.now();
@@ -684,9 +667,9 @@ async function uploadDatasetWithProgress(formData, name, fileName) {
         
         xhr.addEventListener('error', function() {
             console.error('XHR error occurred');
-            const miniBar = document.getElementById('minimized-progress-bar');
-            if (miniBar) miniBar.remove();
-            progressModal.close();
+            if (progressModal && progressModal.parentNode) {
+                progressModal.parentNode.removeChild(progressModal);
+            }
             throw new Error(JSON.stringify({ 
                 message: 'Upload failed. Please check your connection and try again.',
                 details: 'Network error occurred during upload',
@@ -696,9 +679,9 @@ async function uploadDatasetWithProgress(formData, name, fileName) {
         
         xhr.addEventListener('abort', function() {
             console.log('Upload was cancelled');
-            const miniBar = document.getElementById('minimized-progress-bar');
-            if (miniBar) miniBar.remove();
-            progressModal.close();
+            if (progressModal && progressModal.parentNode) {
+                progressModal.parentNode.removeChild(progressModal);
+            }
         });
         
         xhr.open('POST', '/api/datasets/upload');
@@ -709,9 +692,9 @@ async function uploadDatasetWithProgress(formData, name, fileName) {
         console.error('Upload dataset error:', error);
         
         // Clean up progress elements
-        const miniBar = document.getElementById('minimized-progress-bar');
-        if (miniBar) miniBar.remove();
-        progressModal.close();
+        if (progressModal && progressModal.parentNode) {
+            progressModal.parentNode.removeChild(progressModal);
+        }
         
         // Parse error details if available
         let errorInfo = { message: error.message, details: null, status: null };
@@ -1198,6 +1181,47 @@ function initializeModalObserver() {
     }
 }
 
+// Dataset name validation
+function initializeDatasetNameValidation() {
+    const nameInput = document.getElementById('dataset-name');
+    if (!nameInput) return;
+    
+    let validationTimeout;
+    
+    nameInput.addEventListener('input', function() {
+        clearTimeout(validationTimeout);
+        const existingError = document.getElementById('dataset-name-error');
+        if (existingError) existingError.remove();
+        
+        const name = this.value.trim();
+        if (!name) return;
+        
+        validationTimeout = setTimeout(async () => {
+            try {
+                const existingDatasets = await app.apiRequest('/datasets');
+                if (existingDatasets.success) {
+                    const duplicateName = existingDatasets.data.find(dataset => 
+                        dataset.name.toLowerCase() === name.toLowerCase()
+                    );
+                    
+                    if (duplicateName) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.id = 'dataset-name-error';
+                        errorDiv.style.cssText = 'color: #dc3545; font-size: 12px; margin-top: 5px; display: flex; align-items: center; gap: 5px;';
+                        errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Dataset name already exists';
+                        nameInput.parentNode.appendChild(errorDiv);
+                        nameInput.style.borderColor = '#dc3545';
+                    } else {
+                        nameInput.style.borderColor = '#28a745';
+                    }
+                }
+            } catch (error) {
+                console.error('Error validating dataset name:', error);
+            }
+        }, 500);
+    });
+}
+
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     initializeModalObserver();
@@ -1281,38 +1305,42 @@ function cancelUpload() {
     if (window.currentUploadXHR) {
         window.currentUploadXHR.abort();
     }
-    const miniBar = document.getElementById('minimized-progress-bar');
-    if (miniBar) miniBar.remove();
-    Swal.close();
+    const modal = document.getElementById('custom-progress-modal');
+    if (modal && modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+    }
 }
 
 function closeCompletedUpload() {
-    const miniBar = document.getElementById('minimized-progress-bar');
-    if (miniBar) miniBar.remove();
-    Swal.close();
+    const modal = document.getElementById('custom-progress-modal');
+    if (modal && modal.parentNode) {
+        modal.parentNode.removeChild(modal);
+    }
     
     setTimeout(() => {
         const processingTime = (Date.now() - window.uploadStartTime) / 1000;
         
-        Swal.fire({
-            title: 'Upload Successful!',
-            html: `
-                <div style="text-align: center;">
+        // Create custom success modal
+        const successModal = document.createElement('div');
+        successModal.className = 'custom-modal-overlay';
+        successModal.innerHTML = `
+            <div class="custom-modal-content success-modal">
+                <div style="text-align: center; padding: 40px;">
                     <i class="fas fa-check-circle" style="font-size: 64px; color: #28a745; margin-bottom: 20px;"></i>
-                    <h3>Dataset uploaded and processed successfully</h3>
+                    <h3 style="margin: 0 0 20px 0; color: #333;">Upload Successful!</h3>
+                    <p style="margin: 0 0 20px 0; color: #666;">Dataset uploaded and processed successfully</p>
                     <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: left;">
                         <div style="margin-bottom: 10px;"><i class="fas fa-database"></i> <strong>Records:</strong> ${window.uploadRecordCount ? window.uploadRecordCount.toLocaleString() : 'N/A'}</div>
                         <div style="margin-bottom: 10px;"><i class="fas fa-tachometer-alt"></i> <strong>Processing Rate:</strong> ${window.uploadRecordCount ? Math.round(window.uploadRecordCount / processingTime).toLocaleString() : 'N/A'} records/sec</div>
                         <div><i class="fas fa-clock"></i> <strong>Completed:</strong> ${new Date().toLocaleString()}</div>
                     </div>
+                    <button class="btn-primary" onclick="closeSuccessModal()" style="padding: 12px 24px; border: none; border-radius: 8px; background: #28a745; color: white; cursor: pointer; font-size: 14px; font-weight: 500;">
+                        Continue
+                    </button>
                 </div>
-            `,
-            icon: 'success',
-            confirmButtonText: 'Continue',
-            width: 550
-        }).then(() => {
-            loadDatasets();
-        });
+            </div>
+        `;
+        document.body.appendChild(successModal);
     }, 300);
 }
 
@@ -1331,15 +1359,6 @@ function updateProgress(percentage, status, speed, timeRemaining, recordsProcess
     if (uploadSpeed) uploadSpeed.textContent = speed;
     if (timeRemainingEl) timeRemainingEl.textContent = timeRemaining;
     if (recordsEl) recordsEl.textContent = recordsProcessed ? recordsProcessed.toLocaleString() : '0';
-    
-    // Update minimized bar
-    const miniFill = document.getElementById('mini-progress-fill');
-    const miniText = document.getElementById('mini-progress-text');
-    const miniStatus = document.getElementById('mini-progress-status');
-    
-    if (miniFill) miniFill.style.width = percentage + '%';
-    if (miniText) miniText.textContent = percentage + '%';
-    if (miniStatus) miniStatus.textContent = status;
 }
 
 // Real-time progress polling
@@ -1407,26 +1426,11 @@ function completeUpload(recordCount, startTime) {
     const actionsDiv = document.getElementById('progress-actions');
     if (actionsDiv) {
         actionsDiv.innerHTML = `
-            <button class="btn-primary" onclick="closeCompletedUpload()" style="margin-top: 15px;">
-                <i class="fas fa-check"></i> Close
+            <button class="btn-action btn-primary" onclick="closeCompletedUpload()">
+                <i class="fas fa-check"></i>
+                <span>Close</span>
             </button>
         `;
-    }
-    
-    // Update minimized bar actions too
-    const miniBar = document.getElementById('minimized-progress-bar');
-    if (miniBar) {
-        const miniActions = miniBar.querySelector('div > div');
-        if (miniActions) {
-            miniActions.innerHTML = `
-                <button onclick="maximizeProgress()" style="background: none; border: none; color: #666; cursor: pointer; margin-right: 5px;" title="Maximize">
-                    <i class="fas fa-window-maximize"></i>
-                </button>
-                <button onclick="closeCompletedUpload()" style="background: none; border: none; color: #28a745; cursor: pointer;" title="Close">
-                    <i class="fas fa-check"></i>
-                </button>
-            `;
-        }
     }
 }
 
@@ -1434,15 +1438,13 @@ function completeUpload(recordCount, startTime) {
 function updateStepIndicator(currentStep, stepText) {
     const stepNumber = document.querySelector('.step-number');
     const stepTextEl = document.getElementById('current-step-text');
-    const steps = document.querySelectorAll('.step');
-    const miniStep = document.getElementById('mini-current-step');
+    const timelineSteps = document.querySelectorAll('.timeline-step');
     
     if (stepNumber) stepNumber.textContent = currentStep;
     if (stepTextEl) stepTextEl.textContent = stepText;
-    if (miniStep) miniStep.textContent = `Step ${currentStep}: ${stepText}`;
     
-    // Update step progress indicators
-    steps.forEach((step, index) => {
+    // Update timeline step indicators
+    timelineSteps.forEach((step, index) => {
         const stepNum = index + 1;
         step.classList.remove('active', 'completed');
         
@@ -1466,6 +1468,13 @@ if (typeof window !== 'undefined') {
     window.maximizeProgress = maximizeProgress;
     window.cancelUpload = cancelUpload;
     window.closeCompletedUpload = closeCompletedUpload;
+    window.closeSuccessModal = function() {
+        const modal = document.querySelector('.success-modal');
+        if (modal && modal.parentNode && modal.parentNode.parentNode) {
+            modal.parentNode.parentNode.removeChild(modal.parentNode);
+        }
+        loadDatasets();
+    };
     
     // Ensure datasets object is available
     window.datasets = {

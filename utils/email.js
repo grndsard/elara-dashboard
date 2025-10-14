@@ -11,8 +11,8 @@ const transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: false
   },
-  debug: true,
-  logger: true
+  debug: false,
+  logger: false
 });
 
 // Test email connection

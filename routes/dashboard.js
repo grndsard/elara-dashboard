@@ -4,6 +4,29 @@ const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Get filters only (fast endpoint for initial load)
+router.get('/filters', authenticateToken, async (req, res) => {
+  try {
+    // Get available datasets for filter
+    const [datasets] = await db.execute(
+      'SELECT id, name FROM datasets WHERE status = "completed" ORDER BY name'
+    );
+    
+    res.json({
+      success: true,
+      data: {
+        datasets: datasets.map(dataset => ({
+          id: dataset.id,
+          name: dataset.name
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Dashboard filters error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch filters' });
+  }
+});
+
 // Get dashboard data
 router.get('/data', authenticateToken, async (req, res) => {
   try {
@@ -222,6 +245,7 @@ router.get('/data', authenticateToken, async (req, res) => {
     const ebitdaMargin = totalRevenue > 0 ? ((totalEbitda / totalRevenue) * 100).toFixed(1) : '0.0';
     const topPerformer = revenueByEntity.length > 0 ? revenueByEntity[0].company_display_name || revenueByEntity[0].company_code : '-';
     const lowPerformer = revenueByEntity.length > 0 ? revenueByEntity[revenueByEntity.length - 1].company_display_name || revenueByEntity[revenueByEntity.length - 1].company_code : '-';
+    const activeEntities = entities.length;
     
     console.log('Performance Metrics:', {
       totalRevenue, totalCogs, totalEbitda,

@@ -30,6 +30,9 @@ async function initializeApp() {
     
     const token = localStorage.getItem('authToken');
     if (token) {
+        // Set authToken immediately
+        authToken = token;
+        
         try {
             const response = await fetch(`${API_BASE}/profile`, {
                 headers: {
@@ -40,7 +43,6 @@ async function initializeApp() {
             if (response.ok) {
                 const data = await response.json();
                 currentUser = data.data;
-                authToken = token;
                 
                 console.log('User loaded:', currentUser);
                 
@@ -54,11 +56,13 @@ async function initializeApp() {
                 }
             } else {
                 localStorage.removeItem('authToken');
+                authToken = null;
                 await ensureMinLoadTime(startTime, minLoadTime);
                 showLoginPage();
             }
         } catch (error) {
             localStorage.removeItem('authToken');
+            authToken = null;
             await ensureMinLoadTime(startTime, minLoadTime);
             showLoginPage();
         }
@@ -116,6 +120,8 @@ function showMainApp() {
         setTimeout(() => {
             updateMenuVisibility();
         }, 100);
+        
+
     }
     
     const path = window.location.pathname.slice(1);
@@ -166,7 +172,9 @@ function showPage(pageId) {
     setTimeout(() => {
         switch(pageId) {
             case 'dashboard':
-                if (typeof loadDashboardData === 'function') loadDashboardData();
+                if (typeof loadDashboardData === 'function') {
+                    loadDashboardData();
+                }
                 break;
             case 'users':
                 if (typeof initializeUsersPage === 'function') {
