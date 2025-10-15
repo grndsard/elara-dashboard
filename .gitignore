@@ -6,6 +6,10 @@ db_service/__pycache__/
 # Environment variables
 .env
 
+# Backup files
+backup/
+*.backup
+
 # Logs
 logs/
 *.log
