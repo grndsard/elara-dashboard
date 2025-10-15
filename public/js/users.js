@@ -260,7 +260,11 @@ function initializeUserForms() {
     
     if (!result.isConfirmed) return;
     
-    const submitButton = e.target.querySelector('button[type="submit"]');
+    const submitButton = e.target.querySelector('button[type="submit"]') || document.querySelector('#add-user-modal button[type="submit"]');
+    if (!submitButton) {
+        console.error('Submit button not found');
+        return;
+    }
     const originalText = submitButton.innerHTML;
     
     try {
@@ -301,8 +305,10 @@ function initializeUserForms() {
         console.error('Add user error:', error);
         Swal.fire('Error!', error.message || 'Failed to add user', 'error');
     } finally {
-        submitButton.innerHTML = originalText;
-        submitButton.disabled = false;
+        if (submitButton) {
+            submitButton.innerHTML = originalText;
+            submitButton.disabled = false;
+        }
     }
         });
     }

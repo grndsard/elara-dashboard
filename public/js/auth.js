@@ -324,6 +324,38 @@ function clearFieldError(fieldId) {
     }
 });
 
+// Add password validation for force password change
+function initForcePasswordValidation() {
+    const forceNewPasswordField = document.getElementById('force-new-password');
+    if (forceNewPasswordField) {
+        forceNewPasswordField.addEventListener('input', function() {
+            const password = this.value;
+            const helpText = this.parentElement.nextElementSibling;
+            
+            if (password) {
+                const validation = app.validatePassword(password);
+                if (validation.isValid) {
+                    helpText.innerHTML = '<i class="fas fa-check" style="color: #28a745;"></i> Password meets requirements';
+                    helpText.style.color = '#28a745';
+                } else {
+                    helpText.innerHTML = '<i class="fas fa-times" style="color: #dc3545;"></i> ' + validation.errors[0];
+                    helpText.style.color = '#dc3545';
+                }
+            } else {
+                helpText.innerHTML = 'Password must be at least 8 characters long';
+                helpText.style.color = '#6c757d';
+            }
+        });
+    }
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initForcePasswordValidation);
+} else {
+    initForcePasswordValidation();
+}
+
 // Close modal when clicking outside
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) {

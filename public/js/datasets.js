@@ -485,8 +485,9 @@ async function uploadDatasetWithProgress(formData, name, fileName) {
     const progressModal = document.createElement('div');
     progressModal.id = 'custom-progress-modal';
     progressModal.className = 'custom-modal-overlay';
+    progressModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999;';
     progressModal.innerHTML = `
-        <div class="custom-modal-content upload-progress-modal">
+        <div class="custom-modal-content upload-progress-modal" style="position: relative; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
             <div class="upload-progress-container">
                 <div class="progress-header">
                     <div class="upload-icon">
@@ -583,7 +584,7 @@ async function uploadDatasetWithProgress(formData, name, fileName) {
         
         xhr.upload.addEventListener('progress', function(e) {
             if (e.lengthComputable) {
-                const percentComplete = Math.round((e.loaded / e.total) * 40); // Upload is 40% of total process
+                const percentComplete = Math.round((e.loaded / e.total) * 30); // Upload is 30% of total process
                 const currentTime = Date.now();
                 const timeDiff = (currentTime - lastTime) / 1000;
                 const bytesDiff = e.loaded - lastLoaded;
@@ -604,8 +605,8 @@ async function uploadDatasetWithProgress(formData, name, fileName) {
                     const remainingBytes = e.total - e.loaded;
                     const uploadTimeRemaining = remainingBytes / speedBytes;
                     
-                    // Estimate total time including processing (upload is ~40% of total)
-                    const totalEstimatedTime = uploadTimeRemaining / 0.4;
+                    // Estimate total time including processing (upload is ~30% of total)
+                    const totalEstimatedTime = uploadTimeRemaining / 0.3;
                     timeRemaining = formatTime(totalEstimatedTime);
                     
                     lastLoaded = e.loaded;
@@ -617,47 +618,78 @@ async function uploadDatasetWithProgress(formData, name, fileName) {
         });
         
         xhr.addEventListener('load', function() {
+            console.log('XHR load event - Status:', xhr.status);
+            console.log('Response text:', xhr.responseText);
+            
             if (xhr.status === 200 || xhr.status === 201) {
                 try {
                     const data = JSON.parse(xhr.responseText);
+                    console.log('Parsed response data:', data);
+                    
                     if (data.success) {
                         // Store record count for completion dialog
                         window.uploadRecordCount = data.data.recordCount || 0;
                         
-                        // Step 2: Start real-time progress polling
+                        // Start processing simulation after upload completes
                         updateStepIndicator(2, 'Processing file data...');
-                        updateProgress(45, 'Processing file data...', '-', 'Processing...', 0);
+                        updateProgress(35, 'Processing file data...', '-', 'Processing...', 0);
                         
-                        // Poll for real-time progress
-                        const datasetId = data.data?.id;
-                        if (datasetId) {
-                            pollProcessingProgress(datasetId, data.data.recordCount || 0, startTime);
-                        } else {
-                            // Fallback to simulated progress
-                            simulateProgress(data.data.recordCount || 0, startTime);
-                        }
+                        // Simulate processing steps
+                        setTimeout(() => {
+                            updateStepIndicator(3, 'Inserting records into database...');
+                            updateProgress(70, 'Inserting records...', '-', 'Finalizing...', Math.floor(data.data.recordCount * 0.5));
+                        }, 1000);
+                        
+                        setTimeout(() => {
+                            updateStepIndicator(4, 'Validating data integrity...');
+                            updateProgress(95, 'Validating data...', '-', 'Completing...', Math.floor(data.data.recordCount * 0.9));
+                        }, 2000);
+                        
+                        setTimeout(() => {
+                            // Upload completed successfully
+                            updateStepIndicator(4, 'Upload completed successfully!');
+                            updateProgress(100, 'Upload completed!', '-', 'Done!', data.data.recordCount);
+                            
+                            // Replace action buttons with close button
+                            const actionsDiv = document.getElementById('progress-actions');
+                            if (actionsDiv) {
+                                actionsDiv.innerHTML = `
+                                    <button class="btn-action btn-primary" onclick="closeCompletedUpload()">
+                                        <i class="fas fa-check"></i>
+                                        <span>Close</span>
+                                    </button>
+                                `;
+                            }
+                            
+                            // Auto-close after 3 seconds
+                            setTimeout(() => {
+                                closeCompletedUpload();
+                            }, 3000);
+                        }, 3000);
+                        
                     } else {
                         throw new Error(data.message || 'Upload failed');
                     }
                 } catch (parseError) {
                     console.error('Error parsing server response:', parseError);
-                    throw new Error('Invalid server response');
+                    console.error('Raw response:', xhr.responseText);
+                    throw new Error('Invalid server response: ' + parseError.message);
                 }
             } else {
                 console.error('Upload failed with status:', xhr.status);
                 console.error('Response text:', xhr.responseText);
                 
                 // Try to parse error response
-                let errorMessage = `Upload failed (${xhr.status}). Please try again.`;
-                let errorDetails = null;
+                let errorMessage = `Upload failed with status: ${xhr.status}`;
+                let errorDetails = xhr.responseText;
                 
                 try {
                     const errorData = JSON.parse(xhr.responseText);
                     console.error('Server error details:', errorData);
                     errorMessage = errorData.message || errorMessage;
-                    errorDetails = errorData.details || xhr.responseText;
+                    errorDetails = errorData.error || errorData.details || xhr.responseText;
                 } catch (parseError) {
-                    console.error('Failed to parse error response:', xhr.responseText);
+                    console.error('Failed to parse error response:', parseError);
                     errorDetails = xhr.responseText.substring(0, 500);
                 }
                 
@@ -850,7 +882,7 @@ async function editDataset(datasetId) {
                 <div class="dataset-edit-form">
                     <div class="form-group">
                         <label for="dataset-name-edit">Dataset Name</label>
-                        <input type="text" id="dataset-name-edit" value="${data.name}" class="swal2-input">
+                        <input type="text" id="dataset-name-edit" value="${data.name}" class="dataset-name-input">
                     </div>
                     
                     <div class="dataset-info">
@@ -874,10 +906,27 @@ async function editDataset(datasetId) {
                 </div>
                 
                 <style>
-                    .dataset-edit-form { text-align: left; }
+                    .dataset-edit-form { text-align: left; padding: 0; }
                     .form-group { margin-bottom: 20px; }
-                    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
-                    .dataset-info { background: #f8f9fa; padding: 15px; border-radius: 8px; }
+                    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; text-align: left; }
+                    .dataset-name-input { 
+                        width: 100% !important; 
+                        max-width: 100% !important; 
+                        margin: 0 !important; 
+                        padding: 12px 16px !important; 
+                        border: 2px solid #e1e5e9 !important; 
+                        border-radius: 8px !important; 
+                        font-size: 14px !important; 
+                        box-sizing: border-box !important;
+                        background: #fff !important;
+                        transition: border-color 0.2s ease !important;
+                    }
+                    .dataset-name-input:focus {
+                        border-color: #667eea !important;
+                        outline: none !important;
+                        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+                    }
+                    .dataset-info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; }
                     .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
                     .info-row:last-child { margin-bottom: 0; }
                     .label { font-weight: 500; color: #666; }
@@ -892,11 +941,41 @@ async function editDataset(datasetId) {
             showCancelButton: true,
             confirmButtonText: 'Save',
             cancelButtonText: 'Cancel',
-            preConfirm: () => {
+            preConfirm: async () => {
                 const name = document.getElementById('dataset-name-edit').value;
                 
                 if (!name.trim()) {
                     Swal.showValidationMessage('Dataset name is required');
+                    return false;
+                }
+                
+                // Check if name actually changed
+                if (name.trim() === data.name) {
+                    Swal.showValidationMessage('No changes made to dataset name');
+                    return false;
+                }
+                
+                // Show confirmation dialog
+                const confirmResult = await Swal.fire({
+                    title: 'Confirm Changes',
+                    html: `
+                        <div style="text-align: left;">
+                            <p>Are you sure you want to update this dataset?</p>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                                <div style="margin-bottom: 10px;"><strong>Current Name:</strong> ${data.name}</div>
+                                <div><strong>New Name:</strong> ${name.trim()}</div>
+                            </div>
+                            <p style="color: #666; font-size: 14px;">This will update the dataset name in the system.</p>
+                        </div>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Update Dataset',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#667eea'
+                });
+                
+                if (!confirmResult.isConfirmed) {
                     return false;
                 }
                 
@@ -1402,19 +1481,50 @@ async function pollProcessingProgress(datasetId, expectedRecords, startTime) {
     }, 1000);
 }
 
+// Simplified progress simulation for linear progress
+function simulateLinearProgress(recordCount, startTime) {
+    console.log('Starting linear progress simulation for', recordCount, 'records');
+    
+    let currentProgress = 45; // Start after upload (40%) + initial processing (5%)
+    const targetProgress = 100;
+    const progressIncrement = 2; // 2% per step
+    const stepInterval = 200; // 200ms per step
+    
+    const progressInterval = setInterval(() => {
+        currentProgress += progressIncrement;
+        
+        if (currentProgress <= 60) {
+            updateStepIndicator(2, 'Processing file data...');
+            updateProgress(currentProgress, 'Reading and parsing file...', '-', 'Processing...', Math.floor(recordCount * 0.3));
+        } else if (currentProgress <= 85) {
+            updateStepIndicator(3, 'Inserting records into database...');
+            const processedRecords = Math.floor(recordCount * ((currentProgress - 60) / 25));
+            updateProgress(currentProgress, `Inserting records... ${processedRecords.toLocaleString()}/${recordCount.toLocaleString()}`, '-', 'Finalizing...', processedRecords);
+        } else if (currentProgress < 100) {
+            updateStepIndicator(4, 'Validating data integrity...');
+            updateProgress(currentProgress, 'Validating data...', '-', 'Completing...', Math.floor(recordCount * 0.95));
+        } else {
+            clearInterval(progressInterval);
+            updateStepIndicator(4, 'Upload completed successfully!');
+            updateProgress(100, 'Upload completed!', '-', 'Done!', recordCount);
+            
+            // Replace action buttons with close button
+            const actionsDiv = document.getElementById('progress-actions');
+            if (actionsDiv) {
+                actionsDiv.innerHTML = `
+                    <button class="btn-action btn-primary" onclick="closeCompletedUpload()">
+                        <i class="fas fa-check"></i>
+                        <span>Close</span>
+                    </button>
+                `;
+            }
+        }
+    }, stepInterval);
+}
+
 // Fallback simulated progress
 function simulateProgress(recordCount, startTime) {
-    updateStepIndicator(3, 'Inserting records into database...');
-    updateProgress(80, 'Inserting records...', '-', 'Finalizing...', Math.floor(recordCount * 0.7));
-    
-    setTimeout(() => {
-        updateStepIndicator(4, 'Validating data integrity...');
-        updateProgress(95, 'Validating data...', '-', 'Completing...', Math.floor(recordCount * 0.9));
-    }, 1500);
-    
-    setTimeout(() => {
-        completeUpload(recordCount, startTime);
-    }, 2500);
+    simulateLinearProgress(recordCount, startTime);
 }
 
 // Complete upload function

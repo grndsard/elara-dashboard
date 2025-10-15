@@ -1,0 +1,111 @@
+<mxfile host="app.diagrams.net" modified="2024-01-15T10:30:00.000Z" agent="5.0" etag="def456" version="22.1.16" type="device">
+  <diagram name="Elara ERD" id="elara-erd">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Title -->
+        <mxCell id="title" value="Elara Database - Entity Relationship Diagram" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="400" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- Users Table -->
+        <mxCell id="users-table" value="users" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="200" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="users-pk" value="🔑 id (INT, PK, AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1;" vertex="1" parent="users-table">
+          <mxGeometry y="26" width="200" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="users-fields" value="fullname (VARCHAR(255))&#xa;email (VARCHAR(255), UNIQUE)&#xa;password (VARCHAR(255))&#xa;phone (VARCHAR(20))&#xa;role (ENUM: admin, user)&#xa;status (ENUM: active, inactive)&#xa;department (VARCHAR(100))&#xa;division (VARCHAR(100))&#xa;profile_photo (VARCHAR(255))&#xa;force_password_change (BOOLEAN)&#xa;reset_token (VARCHAR(255))&#xa;reset_token_expires (DATETIME)&#xa;created_at (TIMESTAMP)&#xa;updated_at (TIMESTAMP)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="users-table">
+          <mxGeometry y="52" width="200" height="228" as="geometry" />
+        </mxCell>
+        
+        <!-- Datasets Table -->
+        <mxCell id="datasets-table" value="datasets" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="200" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="datasets-pk" value="🔑 id (INT, PK, AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1;" vertex="1" parent="datasets-table">
+          <mxGeometry y="26" width="200" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="datasets-fields" value="name (VARCHAR(255))&#xa;filename (VARCHAR(255))&#xa;🔗 uploader_id (INT, FK)&#xa;status (ENUM: pending, processing, completed, failed)&#xa;record_count (INT)&#xa;file_size (BIGINT)&#xa;upload_time (TIMESTAMP)&#xa;processing_time (INT)&#xa;created_at (TIMESTAMP)&#xa;updated_at (TIMESTAMP)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="datasets-table">
+          <mxGeometry y="52" width="200" height="148" as="geometry" />
+        </mxCell>
+        
+        <!-- Dataset Records Table -->
+        <mxCell id="records-table" value="dataset_records" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="720" y="80" width="200" height="520" as="geometry" />
+        </mxCell>
+        <mxCell id="records-pk" value="🔑 id (INT, PK, AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1;" vertex="1" parent="records-table">
+          <mxGeometry y="26" width="200" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="records-fields" value="🔗 dataset_id (INT, FK)&#xa;company_code (VARCHAR(50))&#xa;company_display_name (VARCHAR(255))&#xa;location_display_name (VARCHAR(255))&#xa;location_area_code (VARCHAR(50))&#xa;location_parent_code (VARCHAR(50))&#xa;label (VARCHAR(255))&#xa;partner_display_name (VARCHAR(255))&#xa;unit_department_name (VARCHAR(255))&#xa;business_display_name (VARCHAR(255))&#xa;account_group_name (VARCHAR(100))&#xa;account_code (VARCHAR(50))&#xa;account_name (VARCHAR(255))&#xa;product_display_name (VARCHAR(255))&#xa;date (DATE)&#xa;debit (DECIMAL(15,2))&#xa;credit (DECIMAL(15,2))&#xa;balance (DECIMAL(15,2))&#xa;journal_type (VARCHAR(100))&#xa;journal_entry_number (VARCHAR(100))&#xa;invoice_number (VARCHAR(100))&#xa;id_project_display_name (VARCHAR(255))&#xa;reference (VARCHAR(255))&#xa;type_display_name (VARCHAR(100))&#xa;month (VARCHAR(20))&#xa;company2 (VARCHAR(100))&#xa;regional (VARCHAR(100))&#xa;ref (VARCHAR(100))&#xa;divisi (VARCHAR(100))&#xa;grouping_bisnis (VARCHAR(100))&#xa;akun_utama (VARCHAR(100))&#xa;figure_utama (VARCHAR(100))&#xa;akun_group_1 (VARCHAR(100))&#xa;akun_group_2_type (VARCHAR(100))&#xa;figure_actual (VARCHAR(100))&#xa;cek_holding (VARCHAR(100))&#xa;created_at (TIMESTAMP)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="records-table">
+          <mxGeometry y="52" width="200" height="468" as="geometry" />
+        </mxCell>
+        
+        <!-- Audit Trail Table -->
+        <mxCell id="audit-table" value="audit_trail" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="80" y="420" width="200" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="audit-pk" value="🔑 id (INT, PK, AI)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontStyle=1;" vertex="1" parent="audit-table">
+          <mxGeometry y="26" width="200" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="audit-fields" value="🔗 user_id (INT, FK)&#xa;action (VARCHAR(100))&#xa;table_name (VARCHAR(50))&#xa;record_id (INT)&#xa;old_values (JSON)&#xa;new_values (JSON)&#xa;ip_address (VARCHAR(45))&#xa;user_agent (TEXT)&#xa;created_at (TIMESTAMP)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="audit-table">
+          <mxGeometry y="52" width="200" height="148" as="geometry" />
+        </mxCell>
+        
+        <!-- Relationships -->
+        <mxCell id="rel1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;startFill=0;endArrow=ERmany;endFill=0;" edge="1" parent="1" source="users-fields" target="datasets-fields">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="280" y="180" as="sourcePoint" />
+            <mxPoint x="400" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel1-label" value="uploads" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="rel1">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="rel2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;startFill=0;endArrow=ERmany;endFill=0;" edge="1" parent="1" source="datasets-fields" target="records-fields">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="600" y="180" as="sourcePoint" />
+            <mxPoint x="720" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel2-label" value="contains" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="rel2">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="rel3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=none;startFill=0;endArrow=ERmany;endFill=0;" edge="1" parent="1" source="users-fields" target="audit-fields">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="180" y="360" as="sourcePoint" />
+            <mxPoint x="180" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel3-label" value="performs" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="rel3">
+          <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <!-- Indexes -->
+        <mxCell id="indexes" value="Database Indexes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="320" width="200" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="index-list" value="📊 Performance Indexes:&#xa;• idx_users_email (users.email)&#xa;• idx_users_status (users.status)&#xa;• idx_datasets_uploader (datasets.uploader_id)&#xa;• idx_datasets_status (datasets.status)&#xa;• idx_records_dataset (dataset_records.dataset_id)&#xa;• idx_records_company (dataset_records.company_code)&#xa;• idx_records_account_group (dataset_records.account_group_name)&#xa;• idx_records_date (dataset_records.date)&#xa;• idx_records_filters (dataset_id, company_code, location_parent_code, month)&#xa;• idx_audit_user_action (audit_trail.user_id, action, created_at)" style="text;strokeColor=none;fillColor=#f5f5f5;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="1">
+          <mxGeometry x="400" y="380" width="400" height="160" as="geometry" />
+        </mxCell>
+        
+        <!-- Constraints -->
+        <mxCell id="constraints" value="🔒 Foreign Key Constraints:&#xa;• datasets.uploader_id → users.id&#xa;• dataset_records.dataset_id → datasets.id&#xa;• audit_trail.user_id → users.id&#xa;&#xa;🔑 Unique Constraints:&#xa;• users.email (UNIQUE)&#xa;&#xa;✅ Check Constraints:&#xa;• users.role IN ('admin', 'user')&#xa;• users.status IN ('active', 'inactive')&#xa;• datasets.status IN ('pending', 'processing', 'completed', 'failed')" style="text;strokeColor=none;fillColor=#fff2cc;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;" vertex="1" parent="1">
+          <mxGeometry x="400" y="560" width="400" height="160" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

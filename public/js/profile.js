@@ -57,6 +57,32 @@ document.getElementById('profile-form').addEventListener('submit', async functio
         return;
     }
     
+    // Show confirmation dialog
+    const result = await Swal.fire({
+        title: 'Update Profile?',
+        html: `
+            <div style="text-align: left;">
+                <p>Are you sure you want to update your profile information?</p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <div style="margin-bottom: 10px;"><strong>Full Name:</strong> ${profileData.fullname}</div>
+                    <div style="margin-bottom: 10px;"><strong>Phone:</strong> ${profileData.phone || 'Not specified'}</div>
+                    <div style="margin-bottom: 10px;"><strong>Department:</strong> ${profileData.department || 'Not specified'}</div>
+                    <div><strong>Division:</strong> ${profileData.division || 'Not specified'}</div>
+                </div>
+                <p style="color: #666; font-size: 14px;">This will update your profile information in the system.</p>
+            </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Update Profile',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#667eea'
+    });
+    
+    if (!result.isConfirmed) {
+        return;
+    }
+    
     const submitButton = e.target.querySelector('button[type="submit"]');
     const originalText = submitButton.innerHTML;
     
@@ -256,6 +282,31 @@ document.getElementById('change-password-form').addEventListener('submit', async
     const passwordValidation = app.validatePassword(password);
     if (!passwordValidation.isValid) {
         app.showAlert(passwordValidation.errors.join('\n'), 'error');
+        return;
+    }
+    
+    // Show confirmation dialog
+    const result = await Swal.fire({
+        title: 'Change Password?',
+        html: `
+            <div style="text-align: left;">
+                <p>Are you sure you want to change your password?</p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <div style="margin-bottom: 10px;"><i class="fas fa-shield-alt"></i> Your current password will be replaced</div>
+                    <div style="margin-bottom: 10px;"><i class="fas fa-key"></i> You will need to use the new password for future logins</div>
+                    <div><i class="fas fa-sign-out-alt"></i> You may be logged out after the change</div>
+                </div>
+                <p style="color: #666; font-size: 14px;">Make sure you remember your new password.</p>
+            </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Change Password',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc3545'
+    });
+    
+    if (!result.isConfirmed) {
         return;
     }
     
